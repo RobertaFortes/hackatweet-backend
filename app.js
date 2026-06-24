@@ -1,20 +1,27 @@
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+require('dotenv').config();
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const cors = require('cors');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const usersRouter = require('./routes/users');
+const tweetsRouter = require('./routes/tweets');
 
-var app = express();
+const app = express();
 
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.get('/api', (req, res) => res.json({ status: 'ok' }));
+app.use('/api/users', usersRouter);
+app.use('/api/tweets', tweetsRouter);
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ result: false, error: 'Internal server error' });
+});
 
 module.exports = app;
