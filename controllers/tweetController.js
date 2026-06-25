@@ -1,7 +1,10 @@
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const Tweet = require('../models/Tweet');
 const { extractHashtags } = require('../utils/hashtags');
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -19,11 +22,18 @@ exports.getTweets = asyncHandler(async (req, res) => {
 
 exports.createTweet = asyncHandler(async (req, res) => {
   try {
-    const { content, author } = req.body;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        result: false,
+        error: 'content is required',
+      });
+    }
 
     const tweet = new Tweet({
       content,
-      author,
+      author: req.user._id,
       hashtags: extractHashtags(content),
     });
 
@@ -42,6 +52,13 @@ exports.createTweet = asyncHandler(async (req, res) => {
 });
 exports.deleteTweet = asyncHandler(async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        result: false,
+        error: 'Invalid tweet id',
+      });
+    }
+
     const tweet = await Tweet.findByIdAndDelete(req.params.id);
 
     if (!tweet) {
@@ -62,7 +79,14 @@ exports.deleteTweet = asyncHandler(async (req, res) => {
 
 exports.toggleLike = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.user._id.toString();
+
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        result: false,
+        error: 'Invalid tweet id',
+      });
+    }
 
     const tweet = await Tweet.findById(req.params.id);
 

@@ -1,5 +1,8 @@
 const router = require('express').Router();
+const authMiddleware = require('../middleware/auth');
 const { getTweets, createTweet, deleteTweet, toggleLike, getTrends, getTweetsByHashtag } = require('../controllers/tweetController');
+
+router.use(authMiddleware);
 
 router.get('/', getTweets);
 router.post('/', createTweet);
