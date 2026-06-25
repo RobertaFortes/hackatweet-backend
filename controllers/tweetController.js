@@ -20,7 +20,9 @@ exports.getTweets = asyncHandler(async (req, res) => {
 exports.createTweet = asyncHandler(async (req, res) => {
   try {
     const { content, author } = req.body;
-
+    if (!content || !author) {
+    return res.status(400).json({ result: false, error: 'All fields are required' });
+  }
     const tweet = new Tweet({
       content,
       author,
