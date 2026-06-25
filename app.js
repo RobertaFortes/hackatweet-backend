@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
 
+const connectToDatabase = require('./models/connection');
 const usersRouter = require('./routes/users');
 const tweetsRouter = require('./routes/tweets');
 
@@ -14,6 +15,16 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Ensure a DB connection is established before handling any request.
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.get('/api', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/users', usersRouter);
