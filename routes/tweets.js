@@ -4,11 +4,11 @@ const { getTweets, createTweet, deleteTweet, toggleLike, getTrends, getTweetsByH
 
 router.use(authMiddleware);
 
+router.get('/trends', getTrends);
+router.get('/hashtag/:tag', getTweetsByHashtag);
 router.get('/', getTweets);
 router.post('/', createTweet);
 router.delete('/:id', deleteTweet)
 router.put('/:id/like', toggleLike)
-router.get('/trends', getTrends);
-router.get('/hashtag/:tag', getTweetsByHashtag);
 
 module.exports = router;

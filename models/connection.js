@@ -14,6 +14,12 @@ async function connectToDatabase() {
     return cached.conn;
   }
 
+
+  if (mongoose.connection.readyState === 1) {
+    cached.conn = mongoose.connection;
+    return cached.conn;
+  }
+
   if (!cached.promise) {
     cached.promise = mongoose
       .connect(uri, { bufferCommands: false })

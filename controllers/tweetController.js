@@ -54,14 +54,23 @@ exports.deleteTweet = asyncHandler(async (req, res) => {
       });
     }
 
-    const tweet = await Tweet.findByIdAndDelete(req.params.id);
+    const tweet = await Tweet.findById(req.params.id);
 
     if (!tweet) {
-      return res.json({
+      return res.status(404).json({
         result: false,
         error: 'Tweet not found',
       });
     }
+
+    if (tweet.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        result: false,
+        error: 'You can only delete your own tweets',
+      });
+    }
+
+    await tweet.deleteOne();
 
     res.json({ result: true });
   } catch (error) {
@@ -86,7 +95,7 @@ exports.toggleLike = asyncHandler(async (req, res) => {
     const tweet = await Tweet.findById(req.params.id);
 
     if (!tweet) {
-      return res.json({
+      return res.status(404).json({
         result: false,
         error: 'Tweet not found',
       });

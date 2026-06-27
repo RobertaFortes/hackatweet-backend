@@ -1,26 +1,6 @@
-const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../app');
 const User = require('../models/User');
-const dbHandler = require('../models/db-handler');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-let mongoServer;
-
-// beforeAll(async () => {
-//   const uri = process.env.MONGODB_URI.replace('/hackatweet?', '/hackatweet_test?');
-//   await mongoose.connect(uri);
-// });
-beforeAll(async () => {
-  await dbHandler.connect();
-});
-
-afterEach(async () => {
-  await dbHandler.clearDatabase();
-});
-
-afterAll(async () => {
-  await dbHandler.closeDatabase();
-});
 
 const validUser = { username: 'alice', email: 'alice@test.com', password: 'secret123' };
 

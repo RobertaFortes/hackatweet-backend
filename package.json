@@ -5,7 +5,19 @@
   "scripts": {
     "start": "node ./bin/www",
     "dev": "nodemon ./bin/www",
-    "test": "jest --runInBand --forceExit"
+    "test": "jest --runInBand --forceExit",
+    "test:coverage": "jest --runInBand --forceExit --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.js"],
+    "testMatch": ["**/__tests__/**/*.test.js"],
+    "collectCoverageFrom": [
+      "controllers/**/*.js",
+      "middleware/**/*.js",
+      "utils/**/*.js",
+      "routes/**/*.js"
+    ]
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

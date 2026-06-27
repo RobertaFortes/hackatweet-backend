@@ -68,9 +68,11 @@ hackatweet-backend/
 │   └── hashtags.js             # extrait les #hashtags du contenu d'un tweet
 │
 └── __tests__/                  # Jest + supertest + mongodb-memory-server
-    ├── auth.test.js
-    ├── tweet.test.js
-    └── setup.js
+    ├── auth.test.js            # signup / signin
+    ├── auth-middleware.test.js # middleware Bearer token
+    ├── tweet.test.js           # les 6 endpoints de tweets
+    ├── hashtags.test.js        # test unitaire de extractHashtags
+    └── setup.js                # hooks DB globaux (setupFilesAfterEnv)
 ```
 
 ---
@@ -207,8 +209,8 @@ URL de base : `/api`
 |---------|--------------------------|---------------|------------------------------------------------------|
 | GET     | `/tweets`                | —             | liste tous les tweets (author peuplé), les plus récents en premier |
 | POST    | `/tweets`                | `{ content }` | crée un tweet de l'utilisateur connecté ; extrait les hashtags |
-| DELETE  | `/tweets/:id`            | —             | supprime le tweet par id                             |
-| PUT     | `/tweets/:id/like`       | —             | like/unlike (toggle) ; retourne `likesCount`         |
+| DELETE  | `/tweets/:id`            | —             | supprime le tweet (seul l'auteur ; `403` sinon, `404` si introuvable) |
+| PUT     | `/tweets/:id/like`       | —             | like/unlike (toggle) ; retourne `likesCount` (`404` si introuvable)   |
 | GET     | `/tweets/trends`         | —             | top 10 des hashtags par nombre (aggregation)         |
 | GET     | `/tweets/hashtag/:tag`   | —             | tweets contenant le hashtag                          |
 
@@ -245,7 +247,7 @@ curl -X POST http://localhost:3000/api/tweets \
   username/email, validité de l'ObjectId avant la requête.
 - **Hashtags** ([utils/hashtags.js](utils/hashtags.js)) : regex `#(\w+)`, avec dédoublonnage (`Set`) et lowercase.
 - **Trends** : aggregation pipeline `$unwind` → `$group` (count) → `$sort` → `$limit 10`.
-- **Codes de statut** : `400` validation, `401` auth, `409` conflit (existe déjà), `201` créé, `500` erreur interne.
+- **Codes de statut** : `400` validation, `401` auth, `403` interdit (pas l'auteur), `404` introuvable, `409` conflit (existe déjà), `201` créé, `500` erreur interne.
 
 ---
 
@@ -263,7 +265,9 @@ PORT=3000                         # optionnel, défaut 3000
 La connexion est **mise en cache dans un objet global** (`global.mongooseConnection`). C'est important pour
 le déploiement **serverless (Vercel)**, où le module est réutilisé entre les requêtes et où `bin/www` ne s'exécute
 pas. C'est pourquoi `app.js` a un middleware qui appelle `connectToDatabase()` avant chaque requête — garantissant
-une connexion sans en rouvrir une nouvelle à chaque fois.
+une connexion sans en rouvrir une nouvelle à chaque fois. `connectToDatabase()` réutilise aussi une connexion
+Mongoose déjà ouverte (`mongoose.connection.readyState === 1`) au lieu d'en rouvrir une — indispensable en test,
+où `mongodb-memory-server` connecte Mongoose avant que les requêtes n'arrivent.
 
 ### Commandes
 
@@ -272,6 +276,7 @@ yarn          # installe les dépendances
 yarn dev      # nodemon (redémarre à la sauvegarde)
 yarn start    # production (node bin/www)
 yarn test     # Jest + supertest avec Mongo en mémoire
+yarn test:coverage  # idem + rapport de couverture
 ```
 
 ---
@@ -286,7 +291,6 @@ Points à connaître pour le binôme (ce ne sont pas des bugs urgents, ce sont d
   Ça marche, mais `userController.js` (sans le try/catch interne) est le pattern le plus propre à suivre.
 - **[routes/index.js](routes/index.js)** est un résidu d'`express-generator` (utilise `res.render` sans view
   engine configuré). Il n'est pas branché dans `app.js` et peut être supprimé.
-- **Le DELETE d'un tweet ne vérifie pas la paternité** : aujourd'hui n'importe quel utilisateur authentifié peut
-  supprimer n'importe quel tweet par id. Si on veut « seul l'auteur supprime », comparer `tweet.author` avec
-  `req.user._id` dans `deleteTweet`.
+- **Paternité du DELETE — résolu** : `deleteTweet` compare désormais `tweet.author` avec `req.user._id` et renvoie
+  `403` si ce n'est pas l'auteur (et `404` si le tweet n'existe pas). Couvert par un test dans `tweet.test.js`.
 ```
